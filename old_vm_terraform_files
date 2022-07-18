@@ -1,0 +1,159 @@
+This file contains some old Terraform code to deploy a VM with public IP and command execution after creation. Might come in handy later
+
+# resource "azurerm_resource_group" "vms" {
+#   name     = "SuperCompanyVms"
+#   location = var.default_location
+# }
+
+# resource "azurerm_virtual_network" "main" {
+#   name                = "default-network"
+#   address_space       = ["10.0.0.0/16"]
+#   location            = var.default_location
+#   resource_group_name = azurerm_resource_group.vms.name
+# }
+
+# resource "azurerm_subnet" "internal" {
+#   name                 = "internal"
+#   resource_group_name  = azurerm_resource_group.vms.name
+#   virtual_network_name = azurerm_virtual_network.main.name
+#   address_prefixes     = ["10.0.2.0/24"]
+# }
+
+# resource "azurerm_public_ip" "public" {
+#   name                = "public"
+#   resource_group_name = azurerm_resource_group.vms.name
+#   location            = var.default_location
+#   allocation_method   = "Static"
+# }
+
+# resource "azurerm_network_interface" "main" {
+#   name                = "testing-nic"
+#   location            = var.default_location
+#   resource_group_name = azurerm_resource_group.vms.name
+
+#   ip_configuration {
+#     name                          = "testconfiguration1"
+#     subnet_id                     = azurerm_subnet.internal.id
+#     private_ip_address_allocation = "Dynamic"
+#     public_ip_address_id          = azurerm_public_ip.public.id
+#   }
+# }
+
+# resource "azurerm_linux_virtual_machine" "old_database_management_system" {
+#   name                            = "old-database-management-system"
+#   resource_group_name             = azurerm_resource_group.vms.name
+#   location                  # resource "azurerm_resource_group" "vms" {
+#   name     = "SuperCompanyVms"
+#   location = var.default_location
+# }
+
+# resource "azurerm_virtual_network" "main" {
+#   name                = "default-network"
+#   address_space       = ["10.0.0.0/16"]
+#   location            = var.default_location
+#   resource_group_name = azurerm_resource_group.vms.name
+# }
+
+# resource "azurerm_subnet" "internal" {
+#   name                 = "internal"
+#   resource_group_name  = azurerm_resource_group.vms.name
+#   virtual_network_name = azurerm_virtual_network.main.name
+#   address_prefixes     = ["10.0.2.0/24"]
+# }
+
+# resource "azurerm_public_ip" "public" {
+#   name                = "public"
+#   resource_group_name = azurerm_resource_group.vms.name
+#   location            = var.default_location
+#   allocation_method   = "Static"
+# }
+
+# resource "azurerm_network_interface" "main" {
+#   name                = "testing-nic"
+#   location            = var.default_location
+#   resource_group_name = azurerm_resource_group.vms.name
+
+#   ip_configuration {
+#     name                          = "testconfiguration1"
+#     subnet_id                     = azurerm_subnet.internal.id
+#     private_ip_address_allocation = "Dynamic"
+#     public_ip_address_id          = azurerm_public_ip.public.id
+#   }
+# }
+
+# resource "azurerm_linux_virtual_machine" "old_database_management_system" {
+#   name                            = "old-database-management-system"
+#   resource_group_name             = azurerm_resource_group.vms.name
+#   location                        = var.default_location
+#   size                            = "Standard_D2as_v5"
+#   admin_username                  = "db-manager"
+#   admin_password                  = "V3ryL0ng4ndV3ryS3cr3tP4ssw0rdTh4tSh0uldN0tB3Kn0wn-:D"
+#   disable_password_authentication = false
+#   user_data                       = base64encode("connection_string")
+
+#   os_disk {
+#     caching              = "ReadWrite"
+#     storage_account_type = "Standard_LRS"
+#   }
+
+#   source_image_reference {
+#     publisher = "Canonical"
+#     offer     = "UbuntuServer"
+#     sku       = "16.04-LTS"
+#     version   = "latest"
+#   }
+
+
+#   network_interface_ids = [
+#     azurerm_network_interface.main.id
+#   ]
+
+#   provisioner "remote-exec" {
+#     inline = [
+#       "echo Hello from terraform!"
+#     ]
+
+#     connection {
+#       type = "ssh"
+#       user = azurerm_linux_virtual_machine.old_database_management_system.admin_username
+#       password = azurerm_linux_virtual_machine.old_database_management_system.admin_password
+#       host = azurerm_public_ip.public.ip_address
+#     }
+#   }
+# }      = var.default_location
+#   size                            = "Standard_D2as_v5"
+#   admin_username                  = "db-manager"
+#   admin_password                  = "V3ryL0ng4ndV3ryS3cr3tP4ssw0rdTh4tSh0uldN0tB3Kn0wn-:D"
+#   disable_password_authentication = false
+#   user_data                       = base64encode("connection_string")
+
+#   os_disk {
+#     caching              = "ReadWrite"
+#     storage_account_type = "Standard_LRS"
+#   }
+
+#   source_image_reference {
+#     publisher = "Canonical"
+#     offer     = "UbuntuServer"
+#     sku       = "16.04-LTS"
+#     version   = "latest"
+#   }
+
+
+#   network_interface_ids = [
+#     azurerm_network_interface.main.id
+#   ]
+
+#   provisioner "remote-exec" {
+#     inline = [
+#       "echo Hello from terraform!"
+#     ]
+
+#     connection {
+#       type = "ssh"
+#       user = azurerm_linux_virtual_machine.old_database_management_system.admin_username
+#       password = azurerm_linux_virtual_machine.old_database_management_system.admin_password
+#       host = azurerm_public_ip.public.ip_address
+#     }
+#   }
+# }
