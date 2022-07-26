@@ -1,12 +1,19 @@
-# Azure vulnerable application - Terraform
+# Azure vulnerable application
+<img width="759" alt="broken by design white" src="https://user-images.githubusercontent.com/14212955/180998359-a17af967-84bc-4541-af75-06a1ea4e5927.png">
 
-This repository contains the Terraform code to deploy the vulnerable infrastructure. 
+A vulnerable Azure architecture that is online 24/7.
 
-## Prerequisites 
-- Azure CLI
-- Terraform
-- sqlcmd
-- Azure Functions Core Tools 
+## Links
+- Link to tool is: https://brokenazure.cloud
+- File issues at: https://github.com/SecuraBV/brokenbydesign-azure/issues
+- Created by: https://www.secura.com/
+
+
+## Requirements for development
+- [Azure CLI installed and in your $PATH](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+- [Terraform installed and in your $PATH](https://www.terraform.io/downloads)
+- [SQL Command line installed and in your $PATH](https://docs.microsoft.com/en-us/sql/linux/sql-server-linux-setup-tools?view=sql-server-ver16)
+- [Azure Functions Core Tools installed and in your $PATH](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local)
 
 ## Running the Terraform scripts
 1. Login using the `az login`
@@ -18,7 +25,6 @@ This repository contains the Terraform code to deploy the vulnerable infrastruct
 7. If you want to destroy the environment, run `Terraform destroy`
 
 ## Notes
-- This does NOT include the website and API deployment. Only the architecure.
 - Certificate and key expire `Mar 19 14:36:57 2032 GMT`
 - Make sure `Security defaults` is `disabled` (otherwise MFA is required on the DevOps user)
 - The subscription is not registered to use namespace 'Microsoft.Sql' `az provider register --namespace Microsoft.Sql`
