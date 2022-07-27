@@ -42,7 +42,7 @@ resource "azuread_application" "vuln_application" {
   display_name = "Very important and secure application"
 
   provisioner "local-exec" {
-    command = "cat files/key.pem | sed 's/APP_ID_HERE/${azuread_application.vuln_application.application_id}/g' > files/temp.pem"
+    command = "cat files/key.pem | sed -e 's/APP_ID_HERE/${azuread_application.vuln_application.application_id}/g' -e 's/TENANT_ID_HERE/${data.azurerm_client_config.current.tenant_id}/g' > files/temp.pem"
   }
 }
 
