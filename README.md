@@ -18,11 +18,10 @@ The environment provides several flags that can be found by exploiting Azure vul
 ## Running the Terraform scripts
 1. Login using the `az login`
 2. Make sure the certificates (`files/key.pem` and `files/cert.pem`) are still valid, currently untill 2032.
-3. Change the tenant-id to your Azure tenant in the file `files/key.pem`
-4. Run `terraform init` to install required providers
-5. Run `terraform plan` to see changes (You can also skip this step)
-6. Run `terraform apply` to apply changes
-7. If you want to destroy the environment, run `Terraform destroy`
+3. Run `terraform init` to install required providers
+4. Run `terraform plan` to see changes (You can also skip this step)
+5. Run `terraform apply` to apply changes
+6. If you want to destroy the environment, run `Terraform destroy`
 
 ## Notes
 - Certificate and key expire `Mar 19 14:36:57 2032 GMT`
@@ -42,7 +41,7 @@ Run `openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -
 Make sure to add the application-id and tenant-id to the cert.pem in format:
 ```
 -----BEGIN AZURE_DETAILS-----
-Tenant id: 4452edfd-a89d-43aa-8b46-a314c219cc50
+Tenant id: TENANT_ID_HERE
 App-id: APP_ID_HERE
 -----END AZURE_DETAILS-----
 ```
