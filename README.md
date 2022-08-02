@@ -14,6 +14,7 @@ The environment provides several flags that can be found by exploiting Azure vul
 - [Terraform installed and in your $PATH](https://www.terraform.io/downloads)
 - [SQL Command line installed and in your $PATH](https://docs.microsoft.com/en-us/sql/linux/sql-server-linux-setup-tools?view=sql-server-ver16)
 - [Azure Functions Core Tools installed and in your $PATH](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local)
+- sshpass installed and in your $PATH
 
 ## Running the Terraform scripts
 1. Login using the `az login`

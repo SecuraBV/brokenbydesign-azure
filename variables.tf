@@ -4,3 +4,8 @@ variable "default_location" {
   default     = "West Europe"
 }
 
+variable "vpn_username" {
+  description = ""
+  type        = string
+  default     = "Employee23187"
+}
