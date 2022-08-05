@@ -7,6 +7,7 @@ The environment provides several flags that can be found by exploiting Azure vul
 ## Links
 - Link to tool is: https://brokenazure.cloud
 - File issues at: https://github.com/SecuraBV/brokenbydesign-azure/issues
+- Link to website source code is: https://github.com/SecuraBV/brokenbydesign-azure-website
 - Created by: https://www.secura.com/
 
 ## Requirements for development

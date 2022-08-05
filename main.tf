@@ -179,7 +179,7 @@ resource "azurerm_mssql_database" "db" {
   sku_name     = "Basic"
 
   provisioner "local-exec" {
-    command = "sleep 60;sqlcmd -S securavulnerableserver.database.windows.net -U Th1sUs3rn4m3!sUnh4ck4bl3 -P '${random_password.password.result}' -d master -i files/sql_create_user.sql; sqlcmd -S securavulnerableserver.database.windows.net -U Th1sUs3rn4m3!sUnh4ck4bl3 -P ${random_password.password.result} -d securavulnerabledb -i files/sql_setup.sql"
+    command = "sleep 60;sqlcmd -S securavulnerableserver.database.windows.net -U Th1sUs3rn4m3!sUnh4ck4bl3 -P '${random_password.password.result}' -d master -i files/sql_create_user.sql; sqlcmd -S securavulnerableserver.database.windows.net -U Th1sUs3rn4m3!sUnh4ck4bl3 -P '${random_password.password.result}' -d securavulnerabledb -i files/sql_setup.sql"
   }
 }
 
@@ -191,6 +191,11 @@ resource "azuread_user" "vuln_devops_user" {
   disable_password_expiration = true
   disable_strong_password     = true
   office_location             = "Password temp changed to SECURA{D4F4ULT_P4SSW0RD}"
+}
+
+resource "azurerm_resource_group" "vpn_network" {
+  name     = "azure-vpn-rg-secura"
+  location = var.default_location
 }
 
 resource "azurerm_role_definition" "devops_role_def" {
@@ -244,7 +249,8 @@ resource "azurerm_role_definition" "devops_role_def" {
   }
 
   assignable_scopes = [
-    azurerm_resource_group.devops_function.id
+    azurerm_resource_group.devops_function.id,
+    azurerm_resource_group.vpn_network.id
   ]
 }
 
@@ -256,9 +262,10 @@ resource "azurerm_role_assignment" "devops_role_assignment" {
 
 
 # VPN stuff
-resource "azurerm_resource_group" "vpn_network" {
-  name     = "azure-vpn-rg-secura"
-  location = var.default_location
+resource "azurerm_role_assignment" "vpn_network_role_assignment" {
+  scope              = azurerm_resource_group.vpn_network.id
+  role_definition_id = split("|", azurerm_role_definition.devops_role_def.id)[0] # For some reason this is broken? See https://github.com/hashicorp/terraform-provider-azurerm/issues/8426
+  principal_id       = azuread_user.vuln_devops_user.id
 }
 
 resource "azurerm_virtual_network" "mainvn" {
@@ -293,6 +300,19 @@ resource "azurerm_network_interface" "vpn_network_interface" {
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.1.2.4"
     public_ip_address_id          = azurerm_public_ip.vpn_public_ip.id
+  }
+}
+
+resource "azurerm_network_interface" "website_network_interface" {
+  name                = "website-network-interface"
+  location            = var.default_location
+  resource_group_name = azurerm_resource_group.vpn_network.name
+
+  ip_configuration {
+    name                          = "website-ip"
+    subnet_id                     = azurerm_subnet.mainsubnet.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.1.2.5"
   }
 }
 
@@ -352,3 +372,42 @@ resource "azurerm_storage_blob" "ovpn_file" {
   ]
 }
 
+
+resource "azurerm_linux_virtual_machine" "website_host" {
+  name                  = "vpn-website-machine"
+  resource_group_name   = azurerm_resource_group.vpn_network.name
+  location              = var.default_location
+  network_interface_ids = [azurerm_network_interface.website_network_interface.id]
+  size                  = "Standard_B1ms"
+
+  computer_name                   = "websitemachine"
+  admin_username                  = "websitemachine"
+  admin_password                  = random_password.password.result
+  disable_password_authentication = false
+
+  os_disk {
+    name                 = "Website-disk"
+    caching              = "ReadWrite"
+    disk_size_gb         = 127
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "canonical"
+    offer     = "0001-com-ubuntu-server-focal"
+    sku       = "20_04-lts-gen2"
+    version   = "latest"
+  }
+}
+
+resource "azurerm_virtual_machine_extension" "setupwebsite" {
+  name                 = azurerm_linux_virtual_machine.website_host.name
+  virtual_machine_id   = azurerm_linux_virtual_machine.website_host.id
+  publisher            = "Microsoft.Azure.Extensions"
+  type                 = "CustomScript"
+  type_handler_version = "2.0"
+
+  settings = jsonencode({
+    commandToExecute = "sudo apt-get update -y && sudo apt-get install nginx -y && sudo echo \"<h1>SECURA{1NT3RN4L_HTML_W3BP4G3}</h1>\" > /var/www/html/index.html"
+  })
+}
