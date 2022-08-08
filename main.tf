@@ -205,7 +205,13 @@ resource "azurerm_role_definition" "devops_role_def" {
 
   permissions {
     actions = [
-      "Microsoft.Web/sites/*"
+      "Microsoft.Web/sites/*",
+      "Microsoft.HybridCompute/machines/*/read",
+      "Microsoft.Compute/*/read",
+      "Microsoft.Resources/subscriptions/resourceGroups/read",
+      "Microsoft.Resources/deployments/*/read",
+      "Microsoft.Network/*/read",
+      "Microsoft.DesktopVirtualization/*/read"
     ]
     not_actions = [
       "*/write",
