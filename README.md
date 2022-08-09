@@ -7,6 +7,7 @@ The environment provides several flags that can be found by exploiting Azure vul
 ## Links
 - Link to tool is: https://brokenazure.cloud
 - File issues at: https://github.com/SecuraBV/brokenbydesign-azure/issues
+- Link to website source code is: https://github.com/SecuraBV/brokenbydesign-azure-website
 - Created by: https://www.secura.com/
 
 ## Requirements for development
@@ -14,6 +15,8 @@ The environment provides several flags that can be found by exploiting Azure vul
 - [Terraform installed and in your $PATH](https://www.terraform.io/downloads)
 - [SQL Command line installed and in your $PATH](https://docs.microsoft.com/en-us/sql/linux/sql-server-linux-setup-tools?view=sql-server-ver16)
 - [Azure Functions Core Tools installed and in your $PATH](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local)
+- [OpenVPN to complete the challenges](https://www.ovpn.com/en/guides/ubuntu-cli)
+- sshpass installed and in your $PATH
 
 ## Running the Terraform scripts
 1. Login using the `az login`

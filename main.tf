@@ -42,7 +42,7 @@ resource "azuread_application" "vuln_application" {
   display_name = "Very important and secure application"
 
   provisioner "local-exec" {
-    command = "cat files/key.pem | sed 's/APP_ID_HERE/${azuread_application.vuln_application.application_id}/g' > files/temp.pem"
+    command = "cat files/key.pem | sed -e 's/APP_ID_HERE/${azuread_application.vuln_application.application_id}/g' -e 's/TENANT_ID_HERE/${data.azurerm_client_config.current.tenant_id}/g' > files/temp.pem"
   }
 }
 
@@ -127,8 +127,8 @@ resource "null_resource" "publish_function" {
 
 # Database stuff
 resource "azurerm_resource_group" "db" {
-  name     = "secura-db-rg"
-  location = var.default_location # Change this to West Europe when subscription allows this
+  name     = "secura-db-rg2"
+  location = var.default_location
 }
 
 resource "azurerm_storage_account" "db" {
@@ -142,7 +142,7 @@ resource "azurerm_storage_account" "db" {
 resource "random_password" "password" {
   length           = 16
   special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
+  override_special = "#$%&*()-_=+[]{}<>:?"
   min_numeric      = 3
   min_lower        = 3
   min_upper        = 3
@@ -179,7 +179,7 @@ resource "azurerm_mssql_database" "db" {
   sku_name     = "Basic"
 
   provisioner "local-exec" {
-    command = "sleep 60;sqlcmd -S securavulnerableserver.database.windows.net -U Th1sUs3rn4m3!sUnh4ck4bl3 -P ${random_password.password.result} -d master -i files/sql_create_user.sql; sqlcmd -S securavulnerableserver.database.windows.net -U Th1sUs3rn4m3!sUnh4ck4bl3 -P ${random_password.password.result} -d securavulnerabledb -i files/sql_setup.sql"
+    command = "sleep 60;sqlcmd -S securavulnerableserver.database.windows.net -U Th1sUs3rn4m3!sUnh4ck4bl3 -P '${random_password.password.result}' -d master -i files/sql_create_user.sql; sqlcmd -S securavulnerableserver.database.windows.net -U Th1sUs3rn4m3!sUnh4ck4bl3 -P '${random_password.password.result}' -d securavulnerabledb -i files/sql_setup.sql"
   }
 }
 
@@ -193,6 +193,11 @@ resource "azuread_user" "vuln_devops_user" {
   office_location             = "Password temp changed to SECURA{D4F4ULT_P4SSW0RD}"
 }
 
+resource "azurerm_resource_group" "vpn_network" {
+  name     = "azure-vpn-rg-secura"
+  location = var.default_location
+}
+
 resource "azurerm_role_definition" "devops_role_def" {
   name        = "DevOps reader"
   description = "Allow DevOps users to read some resources for development purpose"
@@ -200,7 +205,13 @@ resource "azurerm_role_definition" "devops_role_def" {
 
   permissions {
     actions = [
-      "Microsoft.Web/sites/*"
+      "Microsoft.Web/sites/*",
+      "Microsoft.HybridCompute/machines/*/read",
+      "Microsoft.Compute/*/read",
+      "Microsoft.Resources/subscriptions/resourceGroups/read",
+      "Microsoft.Resources/deployments/*/read",
+      "Microsoft.Network/*/read",
+      "Microsoft.DesktopVirtualization/*/read"
     ]
     not_actions = [
       "*/write",
@@ -244,7 +255,8 @@ resource "azurerm_role_definition" "devops_role_def" {
   }
 
   assignable_scopes = [
-    azurerm_resource_group.devops_function.id
+    azurerm_resource_group.devops_function.id,
+    azurerm_resource_group.vpn_network.id
   ]
 }
 
@@ -252,4 +264,156 @@ resource "azurerm_role_assignment" "devops_role_assignment" {
   scope              = azurerm_resource_group.devops_function.id
   role_definition_id = split("|", azurerm_role_definition.devops_role_def.id)[0] # For some reason this is broken? See https://github.com/hashicorp/terraform-provider-azurerm/issues/8426
   principal_id       = azuread_user.vuln_devops_user.id
+}
+
+
+# VPN stuff
+resource "azurerm_role_assignment" "vpn_network_role_assignment" {
+  scope              = azurerm_resource_group.vpn_network.id
+  role_definition_id = split("|", azurerm_role_definition.devops_role_def.id)[0] # For some reason this is broken? See https://github.com/hashicorp/terraform-provider-azurerm/issues/8426
+  principal_id       = azuread_user.vuln_devops_user.id
+}
+
+resource "azurerm_virtual_network" "mainvn" {
+  name                = "vpn-virtual-network"
+  resource_group_name = azurerm_resource_group.vpn_network.name
+  location            = var.default_location
+  address_space       = ["10.1.0.0/16"]
+}
+
+resource "azurerm_subnet" "mainsubnet" {
+  name                 = "vpn-vn-subnet"
+  resource_group_name  = azurerm_resource_group.vpn_network.name
+  virtual_network_name = azurerm_virtual_network.mainvn.name
+  address_prefixes     = ["10.1.2.0/24"]
+}
+
+resource "azurerm_public_ip" "vpn_public_ip" {
+  name                = "vpn-public-ip"
+  resource_group_name = azurerm_resource_group.vpn_network.name
+  location            = var.default_location
+  allocation_method   = "Dynamic"
+}
+
+resource "azurerm_network_interface" "vpn_network_interface" {
+  name                = "vpn-network-interface"
+  location            = var.default_location
+  resource_group_name = azurerm_resource_group.vpn_network.name
+
+  ip_configuration {
+    name                          = "vpn-ip"
+    subnet_id                     = azurerm_subnet.mainsubnet.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.1.2.4"
+    public_ip_address_id          = azurerm_public_ip.vpn_public_ip.id
+  }
+}
+
+resource "azurerm_network_interface" "website_network_interface" {
+  name                = "website-network-interface"
+  location            = var.default_location
+  resource_group_name = azurerm_resource_group.vpn_network.name
+
+  ip_configuration {
+    name                          = "website-ip"
+    subnet_id                     = azurerm_subnet.mainsubnet.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.1.2.5"
+  }
+}
+
+
+resource "azurerm_linux_virtual_machine" "vpn_host" {
+  name                  = "vpn-host-machine"
+  resource_group_name   = azurerm_resource_group.vpn_network.name
+  location              = var.default_location
+  network_interface_ids = [azurerm_network_interface.vpn_network_interface.id]
+  size                  = "Standard_B1ms"
+
+  computer_name                   = "vpnmachine"
+  admin_username                  = "vpnmachine"
+  admin_password                  = random_password.password.result
+  disable_password_authentication = false
+
+  os_disk {
+    name                 = "VPN-disk"
+    caching              = "ReadWrite"
+    disk_size_gb         = 127
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "canonical"
+    offer     = "0001-com-ubuntu-server-focal"
+    sku       = "20_04-lts-gen2"
+    version   = "latest"
+  }
+}
+
+resource "azurerm_virtual_machine_extension" "setupopenvpn" {
+  name                 = azurerm_linux_virtual_machine.vpn_host.name
+  virtual_machine_id   = azurerm_linux_virtual_machine.vpn_host.id
+  publisher            = "Microsoft.Azure.Extensions"
+  type                 = "CustomScript"
+  type_handler_version = "2.0"
+
+  settings = jsonencode({
+    commandToExecute = replace(replace(replace(file("./files/openvpn_vm_install.sh"), "SUDO_PASSWORD", random_password.password.result), "VPN_USERNAME", var.vpn_username), "ADMIN_USERNAME", azurerm_linux_virtual_machine.vpn_host.admin_username)
+  })
+
+  provisioner "local-exec" {
+    command = "sshpass -p '${random_password.password.result}' scp -o StrictHostKeyChecking=accept-new ${azurerm_linux_virtual_machine.vpn_host.admin_username}@${azurerm_linux_virtual_machine.vpn_host.public_ip_address}:/home/${azurerm_linux_virtual_machine.vpn_host.admin_username}/${var.vpn_username}.ovpn ./files/${var.vpn_username}.ovpn"
+  }
+}
+
+resource "azurerm_storage_blob" "ovpn_file" {
+  name                   = "${var.vpn_username}.ovpn"
+  storage_account_name   = azurerm_storage_account.vuln_storage_account.name
+  storage_container_name = azurerm_storage_container.vuln_storage_container.name
+  type                   = "Block"
+  source                 = "files/${var.vpn_username}.ovpn"
+
+  depends_on = [
+    azurerm_virtual_machine_extension.setupopenvpn
+  ]
+}
+
+
+resource "azurerm_linux_virtual_machine" "website_host" {
+  name                  = "vpn-website-machine"
+  resource_group_name   = azurerm_resource_group.vpn_network.name
+  location              = var.default_location
+  network_interface_ids = [azurerm_network_interface.website_network_interface.id]
+  size                  = "Standard_B1ms"
+
+  computer_name                   = "websitemachine"
+  admin_username                  = "websitemachine"
+  admin_password                  = random_password.password.result
+  disable_password_authentication = false
+
+  os_disk {
+    name                 = "Website-disk"
+    caching              = "ReadWrite"
+    disk_size_gb         = 127
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "canonical"
+    offer     = "0001-com-ubuntu-server-focal"
+    sku       = "20_04-lts-gen2"
+    version   = "latest"
+  }
+}
+
+resource "azurerm_virtual_machine_extension" "setupwebsite" {
+  name                 = azurerm_linux_virtual_machine.website_host.name
+  virtual_machine_id   = azurerm_linux_virtual_machine.website_host.id
+  publisher            = "Microsoft.Azure.Extensions"
+  type                 = "CustomScript"
+  type_handler_version = "2.0"
+
+  settings = jsonencode({
+    commandToExecute = "sudo apt-get update -y && sudo apt-get install nginx -y && sudo echo \"<h1>SECURA{1NT3RN4L_HTML_W3BP4G3}</h1>\" > /var/www/html/index.html"
+  })
 }
