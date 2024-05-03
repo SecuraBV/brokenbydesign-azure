@@ -42,12 +42,12 @@ resource "azuread_application" "vuln_application" {
   display_name = "Very important and secure application"
 
   provisioner "local-exec" {
-    command = "cat files/key.pem | sed -e 's/APP_ID_HERE/${azuread_application.vuln_application.application_id}/g' -e 's/TENANT_ID_HERE/${data.azurerm_client_config.current.tenant_id}/g' > files/temp.pem"
+    command = "cat files/key.pem | sed -e 's/APP_ID_HERE/${azuread_application.vuln_application.client_id}/g' -e 's/TENANT_ID_HERE/${data.azurerm_client_config.current.tenant_id}/g' > files/temp.pem"
   }
 }
 
 resource "azuread_service_principal" "vuln_application" {
-  application_id               = azuread_application.vuln_application.application_id
+  client_id               = azuread_application.vuln_application.client_id
   app_role_assignment_required = false
   owners                       = [data.azurerm_client_config.current.object_id]
 
@@ -61,13 +61,13 @@ resource "azuread_directory_role" "vuln_application" {
   display_name = "Directory readers"
 }
 
-resource "azuread_directory_role_member" "vuln_application" {
-  member_object_id = azuread_service_principal.vuln_application.id
-  role_object_id   = azuread_directory_role.vuln_application.id
+resource "azuread_directory_role_assignment" "vuln_application" {
+  principal_object_id = azuread_service_principal.vuln_application.id
+  role_id   = azuread_directory_role.vuln_application.id
 }
 
 resource "azuread_application_certificate" "vuln_application_cert" {
-  application_object_id = azuread_application.vuln_application.id
+  application_id = azuread_application.vuln_application.id
   type                  = "AsymmetricX509Cert"
   value                 = file("files/cert.pem")
   end_date              = "2032-03-14T14:36:57Z"
@@ -101,7 +101,7 @@ resource "azurerm_service_plan" "devops_service_plan" {
   location            = azurerm_resource_group.devops_function.location
   resource_group_name = azurerm_resource_group.devops_function.name
   os_type             = "Windows"
-  sku_name            = "F1"
+  sku_name            = "Y1" # https://medium.com/@geralexgr/function-apps-are-not-supported-in-free-and-shared-plans-please-choose-a-different-plan-7f6b18fdfcd0
 }
 
 resource "azurerm_windows_function_app" "devops_func_app" {
