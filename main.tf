@@ -263,7 +263,6 @@ resource "azurerm_role_definition" "devops_role_def" {
       "microsoft.web/sites/functions/keys/delete",
       "microsoft.web/sites/functions/masterkey/read",
       "microsoft.web/sites/hybridconnectionnamespaces/relays/listkeys/action",
-      "Microsoft.Web/sites/config/list/Action",
       "Microsoft.Web/sites/slots/config/list/Action"
     ]
   }
