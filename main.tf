@@ -157,6 +157,13 @@ resource "azurerm_mssql_server" "db" {
   administrator_login          = "Th1sUs3rn4m3!sUnh4ck4bl3"
   administrator_login_password = random_password.password.result
   minimum_tls_version          = "1.2"
+
+  timeouts {
+    create = "1h30m"
+    read = "1h30m"
+    update = "2h"
+    delete = "30m"
+  }
 }
 
 resource "azurerm_mssql_firewall_rule" "db" {
@@ -180,6 +187,13 @@ resource "azurerm_mssql_database" "db" {
 
   provisioner "local-exec" {
     command = "sleep 60;sqlcmd -S securavulnerableserver.database.windows.net -U Th1sUs3rn4m3!sUnh4ck4bl3 -P '${random_password.password.result}' -d master -i files/sql_create_user.sql; sqlcmd -S securavulnerableserver.database.windows.net -U Th1sUs3rn4m3!sUnh4ck4bl3 -P '${random_password.password.result}' -d securavulnerabledb -i files/sql_setup.sql"
+  }
+
+  timeouts {
+    create = "1h30m"
+    read = "1h30m"
+    update = "2h"
+    delete = "30m"
   }
 }
 
@@ -249,7 +263,6 @@ resource "azurerm_role_definition" "devops_role_def" {
       "microsoft.web/sites/functions/keys/delete",
       "microsoft.web/sites/functions/masterkey/read",
       "microsoft.web/sites/hybridconnectionnamespaces/relays/listkeys/action",
-      "Microsoft.Web/sites/config/list/Action",
       "Microsoft.Web/sites/slots/config/list/Action"
     ]
   }
