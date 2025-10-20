@@ -121,7 +121,7 @@ resource "null_resource" "publish_function" {
   ]
 
   provisioner "local-exec" {
-    command = "cd files/function;sleep 60;func azure functionapp publish af-secura --force"
+    command = "cd files/function;sleep 60;func azure functionapp publish af-secura --force --dotnet"
   }
 }
 
@@ -305,7 +305,38 @@ resource "azurerm_public_ip" "vpn_public_ip" {
   name                = "vpn-public-ip"
   resource_group_name = azurerm_resource_group.vpn_network.name
   location            = var.default_location
-  allocation_method   = "Dynamic"
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
+resource "azurerm_network_security_group" "allow_all" {
+  name                = "allow-all-nsg"
+  location            = var.default_location
+  resource_group_name = azurerm_resource_group.vpn_network.name
+
+  security_rule {
+    name                       = "AllowAllInbound"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range           = "*"
+    destination_port_range      = "*"
+    source_address_prefix       = "*"
+    destination_address_prefix  = "*"
+  }
+
+  security_rule {
+    name                       = "AllowAllOutbound"
+    priority                   = 200
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range           = "*"
+    destination_port_range      = "*"
+    source_address_prefix       = "*"
+    destination_address_prefix  = "*"
+  }
 }
 
 resource "azurerm_network_interface" "vpn_network_interface" {
@@ -321,6 +352,12 @@ resource "azurerm_network_interface" "vpn_network_interface" {
     public_ip_address_id          = azurerm_public_ip.vpn_public_ip.id
   }
 }
+
+resource "azurerm_network_interface_security_group_association" "vpn_nic_assoc" {
+  network_interface_id      = azurerm_network_interface.vpn_network_interface.id
+  network_security_group_id = azurerm_network_security_group.allow_all.id
+}
+
 
 resource "azurerm_network_interface" "website_network_interface" {
   name                = "website-network-interface"
